@@ -613,6 +613,30 @@ class NetworkTopology:
 
                 node_config = self._save_node_configuration(n)
                 if node_config is not None:
+                    if int_map is not None:
+                        try:
+                            # Read the JSON file with interface information
+                            with open(f"{self.files_path}/{int_map}", 'r') as json_file:
+                                data = json.load(json_file)['EthernetIntf']
+
+                            # Open the JPA.config file for reading and writing
+                            with open(f"{self.files_path}/{node_config}", 'r') as config_file:
+                                config_lines = config_file.readlines()
+
+                            # Iterate through each line in the config file
+                            for index, line in enumerate(config_lines):
+                                # Iterate through each interface in the JSON data
+                                for interface, value in data.items():
+                                    if value in line:
+                                        # Update the line with the interface and add opening curly braces
+                                        config_lines[index] = line.replace(value, interface)
+
+                            # Update the config file with modified lines
+                            with open(f"{self.files_path}/{node_config}", 'w') as config_file:
+                                config_file.writelines(config_lines)
+                        except OSError as e:
+                            error(f"Can't read {self.files_path}/{int_map} or {self.files_path}/{node_config}", e)
+
                     n['configuration_file'] = node_config
 
                 template = self._get_template('kinds', p, True)
